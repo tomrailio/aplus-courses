@@ -1,16 +1,15 @@
 package fi.aalto.cs.apluscourses.intellij.actions
 
 import com.intellij.openapi.actionSystem.{AnActionEvent, DataContext}
-import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.openapi.module.Module
+import com.intellij.openapi.project.Project
 import fi.aalto.cs.apluscourses.intellij.TestHelperScala
-import fi.aalto.cs.apluscourses.intellij.services.PluginSettings
-import fi.aalto.cs.apluscourses.intellij.utils.ModuleUtils
+import org.jetbrains.plugins.scala.console.configuration.ScalaConsoleRunConfiguration
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
-import org.mockito.Mockito.{mock, when}
+import org.junit.Test
+import org.mockito.Mockito._
 
-@Ignore
-class ReplActionTest extends BasePlatformTestCase with TestHelperScala {
+class ReplActionTest extends TestHelperScala {
 
   @Test
   def testDoesNothingIfProjectNull(): Unit = {
@@ -25,90 +24,57 @@ class ReplActionTest extends BasePlatformTestCase with TestHelperScala {
   @Test
   def testSetConfigurationConditionallyWithDoNotShowReplFlagWorks(): Unit = {
     //  given
-    val project = getProject
-    val module = getModule
-    val configuration = getConfiguration
-    val replTitle = s"REPL for ${module.getName}"
-    val action = new ReplAction
-    val moduleWorkDir = ModuleUtils.getModuleDirectory(module)
-
-    //  only FALSE branch, as TRUE triggers UI
-    PluginSettings.getInstance.setShowReplConfigurationDialog(false);
+    val project = mock(classOf[Project])
+    val module = mock(classOf[Module])
+    val configuration = mock(classOf[ScalaConsoleRunConfiguration])
+    val actionSpy = spy(new ReplAction)
+    doReturn("path").when(actionSpy).getModuleDirectory(module)
+    doNothing().when(actionSpy).initializeReplCommands(configuration, module)
 
     //  when
-    action.setConfigurationConditionally(project, module, configuration)
+    val result = actionSpy.setConfigurationConditionally(project, module, configuration, false)
 
     //  then
-    assertTrue("REPL's (configuration) working directory has been properly set",
-      configuration.getWorkingDirectory.contains(moduleWorkDir))
-    assertEquals("REPL's (configuration) title has been properly set",
-      replTitle, configuration.getName)
-    assertSame("REPL's (configuration) working Module has been properly set",
-      module, configuration.getModules.head)
+    verify(actionSpy).setConfigurationFields(configuration, "path", module)
+    assertTrue("Returns `true` as the REPL is gonna be started.", result)
   }
 
   @Test
-  def testSetConfigurationFieldsWithValidInputWorks(): Unit = {
+  def testSetConfigurationConditionallyWithShowReplFlagWorks(): Unit = {
     //  given
-    val configuration = getConfiguration
-    val module = getModule
-    val replTitle = s"REPL for ${module.getName}"
-    val action = new ReplAction
-    val moduleWorkDir = ModuleUtils.getModuleDirectory(module)
+    val project = mock(classOf[Project])
+    val module = mock(classOf[Module])
+    val configuration = mock(classOf[ScalaConsoleRunConfiguration])
+    val actionSpy = spy(new ReplAction)
+    doReturn("path").when(actionSpy).getModuleDirectory(module)
+    doReturn(false).when(actionSpy).setConfigurationFieldsFromDialog(configuration, project, module)
 
     //  when
-    action.setConfigurationFields(configuration, moduleWorkDir, module)
+    val result = actionSpy.setConfigurationConditionally(project, module, configuration, true)
 
     //  then
-    assertTrue("REPL's (configuration) working directory has been properly set",
-      configuration.getWorkingDirectory.contains(moduleWorkDir))
-    assertEquals("REPL's (configuration) title has been properly set",
-      replTitle, configuration.getName)
-    assertSame("REPL's (configuration) working Module has been properly set",
-      module, configuration.getModules.head)
+    verify(actionSpy).setConfigurationFieldsFromDialog(configuration, project, module)
+    assertFalse("Returns `false` as the REPL start has been cancelled.", result)
   }
 
   @Test
-  def testSetConfigurationFieldsWithMixedWorkDirModuleInputWorks(): Unit = {
+  def testSetConfigurationFieldsWorks(): Unit = {
     //  given
-    val configuration = getConfiguration
-    val module = getModule
-    val moduleWorkDir = "/fakeWorkDir"
-    val replTitle = s"REPL for ${module.getName}"
-    val action = new ReplAction
+    val moduleWorkDir = ""
+    val correctName= "REPL for name"
+    val module = mock(classOf[Module])
+    doReturn("name").when(module).getName
+    val configuration = mock(classOf[ScalaConsoleRunConfiguration])
+    val actionSpy = spy(new ReplAction)
+    doNothing().when(actionSpy).initializeReplCommands(configuration, module)
 
     //  when
-    action.setConfigurationFields(configuration, moduleWorkDir, module)
+    actionSpy.setConfigurationFields(configuration, moduleWorkDir, module)
 
     //  then
-    assertTrue("REPL's (configuration) working directory has been properly set",
-      configuration.getWorkingDirectory.contains(moduleWorkDir))
-    assertEquals("REPL's (configuration) title has been properly set",
-      replTitle, configuration.getName)
-    assertSame("REPL's (configuration) working Module has been properly set",
-      module, configuration.getModules.head)
+    verify(configuration).setWorkingDirectory(moduleWorkDir)
+    verify(configuration).setModule(module)
+    verify(configuration).setName(correctName)
+    verify(actionSpy).initializeReplCommands(configuration, module)
   }
-
-  @Test
-  def testSetConfigurationFieldsWithMixedModuleWorkDirInputWorks(): Unit = {
-    //  given
-    val configuration = getConfiguration
-    val module = getModule
-    val moduleWorkDir = "/tmp/unitTest_setCustomConfigurationFieldsWithMixedModuleWorkDirInputWorks"
-    val replTitle = s"REPL for ${module.getName}"
-    val action = new ReplAction
-
-    //  when
-    action.setConfigurationFields(configuration, moduleWorkDir, module)
-
-    //  then
-    assertTrue("REPL's (configuration) working directory has been properly set",
-      configuration.getWorkingDirectory.contains(moduleWorkDir))
-    assertEquals("REPL's (configuration) title has been properly set",
-      replTitle, configuration.getName)
-    assertSame("REPL's (configuration) working Module has been properly set",
-      module, configuration.getModules.head)
-  }
-
-  private def getConfiguration = super.getConfiguration(getProject)
 }

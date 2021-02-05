@@ -110,10 +110,12 @@ class ReplAction extends RunConsoleAction {
       private class MyBuilder(module: Module) extends TextConsoleBuilderImpl(module.getProject) {
         override def createConsole(): ConsoleView = new Repl(module)
       }
+
     }
+
   }
 
-  def getDefaultModule(@NotNull project: Project): Option[Module] = {
+  private def getDefaultModule(@NotNull project: Project): Option[Module] = {
     Option(PluginSettings.getInstance().getMainViewModel(project).courseViewModel.get) match {
       case Some(courseViewModel) =>
         Option(ModuleManager.getInstance(project).findModuleByName(courseViewModel
@@ -126,7 +128,7 @@ class ReplAction extends RunConsoleAction {
     }
   }
 
-  def setConfigurationFields(@NotNull configuration: ScalaConsoleRunConfiguration,
+  private[actions] def setConfigurationFields(@NotNull configuration: ScalaConsoleRunConfiguration,
                              @NotNull workingDirectory: String,
                              @NotNull module: Module): Unit = {
     configuration.setWorkingDirectory(workingDirectory)
@@ -136,7 +138,8 @@ class ReplAction extends RunConsoleAction {
     initializeReplCommands(configuration, module)
   }
 
-  def initializeReplCommands(configuration: ScalaConsoleRunConfiguration, module: Module) = {
+  private[actions] def initializeReplCommands(@NotNull configuration: ScalaConsoleRunConfiguration,
+                             @NotNull module: Module) = {
     ModuleUtils.createInitialReplCommandsFile(module)
     if (ModuleUtils.initialReplCommandsFileExists(module)) {
       configuration.setMyConsoleArgs("-usejavacp -i " + MODULE_REPL_INITIAL_COMMANDS_FILE_NAME)
@@ -147,7 +150,7 @@ class ReplAction extends RunConsoleAction {
    * Sets configuration fields for the given configuration and returns true. Returns false if
    * the REPL start is cancelled (i.e. user selects "Cancel" in the REPL configuration dialog).
    */
-  def setConfigurationConditionally(@NotNull project: Project,
+  private[actions] def setConfigurationConditionally(@NotNull project: Project,
                                     @NotNull module: Module,
                                     @NotNull configuration: ScalaConsoleRunConfiguration,
                                     @NotNull condition: Boolean): Boolean = {
@@ -161,28 +164,34 @@ class ReplAction extends RunConsoleAction {
     }
   }
 
-  def getModuleDirectory(module: Module): String = ModuleUtils.getModuleDirectory(module)
+  def getModuleDirectory(@NotNull module: Module): String = ModuleUtils.getModuleDirectory(module)
 
   /**
    * Sets the configuration fields from the REPL dialog. Returns true if it is done successfully,
    * and false if the user cancels the REPL dialog.
    */
-  def setConfigurationFieldsFromDialog(@NotNull configuration: ScalaConsoleRunConfiguration,
-                                               @NotNull project: Project,
-                                               @NotNull module: Module): Boolean = {
+  private[actions] def setConfigurationFieldsFromDialog(@NotNull configuration: ScalaConsoleRunConfiguration,
+                                       @NotNull project: Project,
+                                       @NotNull module: Module): Boolean = {
     val configModel = showReplDialog(project, module)
     if (!configModel.isStartRepl) {
       false
     } else {
-      val changedModuleName = configModel.getTargetModuleName
-      val changedModule = ModuleManager.getInstance(project).findModuleByName(changedModuleName)
-      val changedWorkDir = toSystemIndependentName(configModel.getModuleWorkingDirectory)
-      setConfigurationFields(configuration, changedWorkDir, changedModule)
+      getValuesForConfigurationFieldsAndSet(configuration, project, configModel)
       true
     }
   }
 
-  private def showReplDialog(@NotNull project: Project,
+  private[actions] def getValuesForConfigurationFieldsAndSet(@NotNull configuration: ScalaConsoleRunConfiguration,
+                                            @NotNull project: Project,
+                                            @NotNull configModel: ReplConfigurationFormModel): Unit = {
+    val changedModuleName = configModel.getTargetModuleName
+    val changedModule = ModuleManager.getInstance(project).findModuleByName(changedModuleName)
+    val changedWorkDir = toSystemIndependentName(configModel.getModuleWorkingDirectory)
+    setConfigurationFields(configuration, changedWorkDir, changedModule)
+  }
+
+  private[actions] def showReplDialog(@NotNull project: Project,
                              @NotNull module: Module): ReplConfigurationFormModel = {
     val configModel = new ReplConfigurationFormModel(project, ModuleUtils.getModuleDirectory(module), module.getName)
     val configForm = new ReplConfigurationForm(configModel)

@@ -3,13 +3,13 @@ package fi.aalto.cs.apluscourses.intellij.actions
 import com.intellij.openapi.actionSystem.{AnActionEvent, DataContext}
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
-import fi.aalto.cs.apluscourses.intellij.TestHelperScala
+import fi.aalto.cs.apluscourses.presentation.ReplConfigurationFormModel
 import org.jetbrains.plugins.scala.console.configuration.ScalaConsoleRunConfiguration
 import org.junit.Assert._
 import org.junit.Test
 import org.mockito.Mockito._
 
-class ReplActionTest extends TestHelperScala {
+class ReplActionTest {
 
   @Test
   def testDoesNothingIfProjectNull(): Unit = {
@@ -61,7 +61,7 @@ class ReplActionTest extends TestHelperScala {
   def testSetConfigurationFieldsWorks(): Unit = {
     //  given
     val moduleWorkDir = ""
-    val correctName= "REPL for name"
+    val correctName = "REPL for name"
     val module = mock(classOf[Module])
     doReturn("name").when(module).getName
     val configuration = mock(classOf[ScalaConsoleRunConfiguration])
@@ -76,5 +76,47 @@ class ReplActionTest extends TestHelperScala {
     verify(configuration).setModule(module)
     verify(configuration).setName(correctName)
     verify(actionSpy).initializeReplCommands(configuration, module)
+  }
+
+  @Test
+  def testSetConfigurationFieldsFromDialogWithIsStartReplWorks(): Unit = {
+    //  given
+    val project = mock(classOf[Project])
+    val module = mock(classOf[Module])
+    doReturn("name").when(module).getName
+    val configuration = mock(classOf[ScalaConsoleRunConfiguration])
+    val actionSpy = spy(new ReplAction)
+    doNothing().when(actionSpy).initializeReplCommands(configuration, module)
+    val configModel = mock(classOf[ReplConfigurationFormModel])
+    doReturn(configModel).when(actionSpy).showReplDialog(project, module)
+    doReturn(false).when(configModel).isStartRepl
+
+    //  when
+    val result = actionSpy.setConfigurationFieldsFromDialog(configuration, project, module)
+
+    //  then
+    assertFalse("Do not show the REPL configuration dialog to get values.", result)
+  }
+
+  @Test
+  def testSetConfigurationFieldsFromDialogWithIsNotStartReplWorks(): Unit = {
+    //  given
+    val project = mock(classOf[Project])
+    val module = mock(classOf[Module])
+    doReturn("name").when(module).getName
+    val configuration = mock(classOf[ScalaConsoleRunConfiguration])
+    val actionSpy = spy(new ReplAction)
+    doNothing().when(actionSpy).initializeReplCommands(configuration, module)
+    val configModel = mock(classOf[ReplConfigurationFormModel])
+    doReturn(configModel).when(actionSpy).showReplDialog(project, module)
+    doReturn(true).when(configModel).isStartRepl
+    doNothing().when(actionSpy).getValuesForConfigurationFieldsAndSet(configuration, project, configModel)
+
+    //  when
+    val result = actionSpy.setConfigurationFieldsFromDialog(configuration, project, module)
+
+    //  then
+    verify(actionSpy).getValuesForConfigurationFieldsAndSet(configuration, project, configModel)
+    assertTrue("Do show the REPL configuration dialog to get values.", result)
   }
 }

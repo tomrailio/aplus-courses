@@ -12,6 +12,6 @@ public class ProjectTreePresenter extends IntelliJComponentPresenterBase {
 
   @Override
   protected @Nullable Component getComponent() {
-    return ComponentDatabase.getEditorWindow();
+    return ComponentDatabase.getReplPanel();
   }
 }

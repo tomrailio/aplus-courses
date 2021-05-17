@@ -11,6 +11,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class ComponentLocator {
+  public static boolean isComponentOfClass(@NotNull Component c, @NotNull String classSubstring) {
+    return c.getClass().toString().contains(classSubstring);
+  }
+
+  public static boolean hasChildOfClass(@NotNull Container c, @NotNull String classSubstring) {
+    return !getComponents(c, comp -> isComponentOfClass(comp, classSubstring)).isEmpty();
+  }
+
   @RequiresEdt
   private static List<Component> getComponents(@NotNull Container parentComponent,
                                                @NotNull Predicate<Component> predicate) {
@@ -33,12 +41,11 @@ public class ComponentLocator {
 
   /**
    * Scans through all components and locates the ones which class name matches a substring.
-   * @param componentClassSubstring A case-sensitive substring of the component's desired class.
+   * @param classSubstring A case-sensitive substring of the component's desired class.
    */
   @RequiresEdt
-  public static List<Component> getComponentsByClass(@NotNull String componentClassSubstring) {
-    Predicate<Component> predicate = c -> c.getClass().toString().contains(componentClassSubstring);
-    return getComponents(JOptionPane.getRootFrame(), predicate);
+  public static List<Component> getComponentsByClass(@NotNull String classSubstring) {
+    return getComponents(JOptionPane.getRootFrame(), c -> isComponentOfClass(c, classSubstring));
   }
 
   @RequiresEdt

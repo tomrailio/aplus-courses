@@ -2,6 +2,7 @@ package fi.aalto.cs.apluscourses.ui.ideactivities;
 
 import com.intellij.util.concurrency.annotations.RequiresEdt;
 import icons.PluginIcons;
+import java.awt.AWTEvent;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Component;
@@ -10,6 +11,9 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.awt.event.AWTEventListener;
+import java.awt.event.MouseEvent;
 import java.awt.geom.Area;
 import java.util.HashSet;
 import java.util.Set;
@@ -20,7 +24,7 @@ import javax.swing.JRootPane;
 import javax.swing.SwingUtilities;
 import org.jetbrains.annotations.NotNull;
 
-public class OverlayPane extends JPanel {
+public class OverlayPane extends JPanel implements AWTEventListener {
   // A high value (> 500) allows us to place the overlay pretty much above every other component
   private static final int PANE_Z_ORDER = 20000;
 
@@ -31,6 +35,31 @@ public class OverlayPane extends JPanel {
   private void revalidatePane() {
     getRootPane().revalidate();
     getRootPane().repaint();
+  }
+
+  @RequiresEdt
+  private Area getDimmedArea() {
+    var overlayArea = new Area(new Rectangle(0, 0, getWidth(), getHeight()));
+
+    for (var c : exemptComponents) {
+      // convertPoint is necessary because the component uses a different coordinate origin
+      if (c.isShowing()) {
+        var windowPos = SwingUtilities.convertPoint(c, 0, 0, this);
+        var componentRect = new Rectangle(windowPos.x, windowPos.y, c.getWidth(), c.getHeight());
+
+        overlayArea.subtract(new Area(componentRect));
+      }
+    }
+
+    for (var c : balloonPopups) {
+      // popups are already places in the overlay's coordinate system
+      if (c.isVisible()) {
+        var componentRect = new Rectangle(c.getX(), c.getY(), c.getWidth(), c.getHeight());
+        overlayArea.subtract(new Area(componentRect));
+      }
+    }
+
+    return overlayArea;
   }
 
   @Override
@@ -45,21 +74,7 @@ public class OverlayPane extends JPanel {
     Graphics2D g = (Graphics2D) graphics.create();
     g.setComposite(AlphaComposite.SrcOver.derive(0.7f));
     g.setColor(Color.BLACK); // using JBColor.BLACK is wrong here
-
-    var overlayArea = new Area(new Rectangle(0, 0, getWidth(), getHeight()));
-
-    for (var c : exemptComponents) {
-      // convertPoint is necessary because the component uses a different coordinate origin
-      var origin = SwingUtilities.convertPoint(c, new Point(0, 0), this);
-      var windowPos = new Rectangle(origin.x, origin.y, c.getWidth(), c.getHeight());
-      overlayArea.subtract(new Area(windowPos));
-    }
-
-    for (var c : balloonPopups) {
-      overlayArea.subtract(new Area(c.getBounds()));
-    }
-
-    g.fill(overlayArea);
+    g.fill(getDimmedArea());
   }
 
   @Override
@@ -116,6 +131,10 @@ public class OverlayPane extends JPanel {
     overlay.getRootPane().getLayeredPane().add(overlay, PANE_Z_ORDER);
     overlay.revalidatePane();
 
+    Toolkit.getDefaultToolkit().addAWTEventListener(overlay,
+        AWTEvent.MOUSE_EVENT_MASK | AWTEvent.MOUSE_MOTION_EVENT_MASK
+        | AWTEvent.MOUSE_WHEEL_EVENT_MASK);
+
     return overlay;
   }
 
@@ -124,6 +143,8 @@ public class OverlayPane extends JPanel {
    */
   @RequiresEdt
   public void remove() {
+    Toolkit.getDefaultToolkit().removeAWTEventListener(this);
+
     this.getRootPane().getLayeredPane().remove(this);
     for (var c : this.balloonPopups) {
       this.getRootPane().getLayeredPane().remove(c);
@@ -169,5 +190,22 @@ public class OverlayPane extends JPanel {
   private OverlayPane() {
     associatedRootPane = ((JFrame) JOptionPane.getRootFrame()).getRootPane();
     setLayout(null);
+  }
+
+  @Override
+  public void eventDispatched(AWTEvent event) {
+    var mouseEvent = (MouseEvent) event;
+    var source = (Component) mouseEvent.getSource();
+    if (!getRootPane().getContentPane().isAncestorOf(source)) {
+      // don't process events from context menus, pop-up windows etc.
+      // these are not subject to dimming in the first place - only the main content pane is dimmed
+      return;
+    }
+
+    var windowEventPos = SwingUtilities.convertPoint(source, source.getX(), source.getY(), this);
+    if (getDimmedArea().contains(windowEventPos)) {
+      // the mouse event is inside dimmed area, do something with it
+      // for example, use mouseEvent.consume() to block the event from reaching any component
+    }
   }
 }

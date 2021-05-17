@@ -8,6 +8,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.Area;
 import java.util.HashSet;
@@ -49,16 +50,13 @@ public class OverlayPane extends JPanel {
 
     for (var c : exemptComponents) {
       // convertPoint is necessary because the component uses a different coordinate origin
-      var windowPos = SwingUtilities.convertPoint(c, c.getX(), c.getY(), this);
-      var componentRect = new Rectangle(windowPos.x, windowPos.y, c.getWidth(), c.getHeight());
-
-      overlayArea.subtract(new Area(componentRect));
+      var origin = SwingUtilities.convertPoint(c, new Point(0, 0), this);
+      var windowPos = new Rectangle(origin.x, origin.y, c.getWidth(), c.getHeight());
+      overlayArea.subtract(new Area(windowPos));
     }
 
     for (var c : balloonPopups) {
-      // popups are already places in the overlay's coordinate system
-      var componentRect = new Rectangle(c.getX(), c.getY(), c.getWidth(), c.getHeight());
-      overlayArea.subtract(new Area(componentRect));
+      overlayArea.subtract(new Area(c.getBounds()));
     }
 
     g.fill(overlayArea);

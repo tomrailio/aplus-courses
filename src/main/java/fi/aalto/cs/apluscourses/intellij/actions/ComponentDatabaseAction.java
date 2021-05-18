@@ -32,6 +32,15 @@ public class ComponentDatabaseAction extends DumbAwareAction {
       case 2:
         c = ComponentDatabase.getReplPanel();
         break;
+      case 3:
+        c = ComponentDatabase.getModuleList();
+        break;
+      case 4:
+        c = ComponentDatabase.getExerciseList();
+        break;
+      case 5:
+        c = ComponentDatabase.getAPlusToolWindow();
+        break;
       default:
     }
 

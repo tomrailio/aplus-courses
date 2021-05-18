@@ -1,12 +1,13 @@
 package fi.aalto.cs.apluscourses.ui.ideactivities;
 
-import com.intellij.openapi.ui.ThreeComponentsSplitter;
 import java.awt.Component;
 import java.awt.Container;
-import java.util.Optional;
 
-import com.intellij.openapi.wm.impl.ToolWindowsPane;
+import fi.aalto.cs.apluscourses.ui.exercise.ExercisesView;
+import fi.aalto.cs.apluscourses.ui.module.ModulesView;
 import org.jetbrains.annotations.Nullable;
+
+import javax.swing.JComponent;
 
 public class ComponentDatabase {
   public static @Nullable Component getProjectPane() {
@@ -21,9 +22,25 @@ public class ComponentDatabase {
   public static @Nullable Component getReplPanel() {
     return ComponentLocator.getComponentsByClass("InternalDecorator").stream()
         .filter(c -> ComponentLocator.isComponentOfClass(c.getParent(), "ThreeComponentsSplitter"))
-        //.filter(c -> ComponentLocator.isComponentOfClass(c.getParent().getParent(), "ToolWindowsPane"))
         .filter(c -> ComponentLocator.hasChildOfClass((Container) c, "Repl"))
         .findFirst().orElse(null);
+  }
+
+  public static @Nullable Component getModuleList() {
+    return ComponentLocator.getComponentsByClass("JPanel").stream()
+        .filter(c -> ((JComponent) c).getClientProperty(ModulesView.class.getName()) != null)
+        .findFirst().orElse(null);
+  }
+
+  public static @Nullable Component getExerciseList() {
+    return ComponentLocator.getComponentsByClass("JPanel").stream()
+            .filter(c -> ((JComponent) c).getClientProperty(ExercisesView.class.getName()) != null)
+            .findFirst().orElse(null);
+  }
+
+  public static @Nullable Component getAPlusToolWindow() {
+    var moduleList = getExerciseList();
+    return (moduleList == null) ? null : moduleList.getParent();
   }
 
   private ComponentDatabase() {

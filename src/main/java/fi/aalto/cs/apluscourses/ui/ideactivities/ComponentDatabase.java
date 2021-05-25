@@ -1,13 +1,11 @@
 package fi.aalto.cs.apluscourses.ui.ideactivities;
 
-import java.awt.Component;
-import java.awt.Container;
-
 import fi.aalto.cs.apluscourses.ui.exercise.ExercisesView;
 import fi.aalto.cs.apluscourses.ui.module.ModulesView;
-import org.jetbrains.annotations.Nullable;
-
+import java.awt.Component;
+import java.awt.Container;
 import javax.swing.JComponent;
+import org.jetbrains.annotations.Nullable;
 
 public class ComponentDatabase {
   public static @Nullable Component getProjectPane() {

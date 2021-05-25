@@ -1,5 +1,6 @@
 package fi.aalto.cs.apluscourses.ui.ideactivities;
 
+import com.intellij.openapi.editor.impl.EditorComponentImpl;
 import fi.aalto.cs.apluscourses.ui.exercise.ExercisesView;
 import fi.aalto.cs.apluscourses.ui.module.ModulesView;
 import java.awt.Component;
@@ -15,6 +16,21 @@ public class ComponentDatabase {
 
   public static @Nullable Component getEditorWindow() {
     return ComponentLocator.getComponentByClass("EditorWindow");
+  }
+
+  public static @Nullable EditorComponentImpl getEditorComponent() {
+    return (EditorComponentImpl) ComponentLocator.getComponentByClass("EditorComponentImpl");
+  }
+
+  public static @Nullable EditorComponentImpl getEditorComponent(String fileNameSubstring) {
+    var editors = ComponentLocator.getComponentsByClass("EditorComponentImpl");
+    for (var editorComponent : editors) {
+      var editor = (EditorComponentImpl) editorComponent;
+      if (editor.getEditor().getVirtualFile().getName().contains(fileNameSubstring)) {
+        return editor;
+      }
+    }
+    return null;
   }
 
   public static @Nullable Component getReplPanel() {

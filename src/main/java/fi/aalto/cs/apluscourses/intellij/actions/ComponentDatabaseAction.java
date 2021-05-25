@@ -7,7 +7,13 @@ import fi.aalto.cs.apluscourses.ui.ideactivities.OverlayPane;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.Component;
+import java.util.ArrayList;
+import java.util.Arrays;
 
+/**
+ * Please ignore this class in any potential code reviews.
+ * This class is only used for testing purposes, and will be removed in production.
+ */
 public class ComponentDatabaseAction extends DumbAwareAction {
 
   private OverlayPane overlay;
@@ -20,6 +26,11 @@ public class ComponentDatabaseAction extends DumbAwareAction {
       overlay = OverlayPane.installOverlay();
       index = 0;
     }
+
+    overlay.showEditor(ComponentDatabase.getEditorComponent("GoodStuff"), Arrays.asList(14, 15, 16));
+    overlay.showEditor(ComponentDatabase.getEditorComponent("CategoryDisplay"), Arrays.asList(1, 2, 3, 5, 7, 8, 9, 55, 56, 88));
+
+    if (true) return;
 
     Component c = null;
     switch (index) {

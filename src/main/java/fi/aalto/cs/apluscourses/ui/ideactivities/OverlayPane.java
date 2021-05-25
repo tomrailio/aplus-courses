@@ -1,5 +1,6 @@
 package fi.aalto.cs.apluscourses.ui.ideactivities;
 
+import com.intellij.openapi.editor.impl.EditorComponentImpl;
 import com.intellij.util.concurrency.annotations.RequiresEdt;
 import icons.PluginIcons;
 import java.awt.AWTEvent;
@@ -9,13 +10,13 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.AWTEventListener;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Area;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -29,7 +30,7 @@ public class OverlayPane extends JPanel implements AWTEventListener {
   private static final int PANE_Z_ORDER = 20000;
 
   private final JRootPane associatedRootPane;
-  private final Set<Component> exemptComponents = new HashSet<>();
+  private final Set<GenericHighlighter> exemptComponents = new HashSet<>();
   private final Set<BalloonPopup> balloonPopups = new HashSet<>();
 
   private void revalidatePane() {
@@ -43,11 +44,11 @@ public class OverlayPane extends JPanel implements AWTEventListener {
 
     for (var c : exemptComponents) {
       // convertPoint is necessary because the component uses a different coordinate origin
-      if (c.isShowing()) {
-        var windowPos = SwingUtilities.convertPoint(c, 0, 0, this);
-        var componentRect = new Rectangle(windowPos.x, windowPos.y, c.getWidth(), c.getHeight());
-
-        overlayArea.subtract(new Area(componentRect));
+      if (c.getComponent().isShowing()) {
+        for (var componentRect : c.getArea()) {
+          var windowRect = SwingUtilities.convertRectangle(c.getComponent(), componentRect, this);
+          overlayArea.subtract(new Area(windowRect));
+        }
       }
     }
 
@@ -155,8 +156,18 @@ public class OverlayPane extends JPanel implements AWTEventListener {
   /**
    * Marks a component not to be dimmed.
    */
-  public void showComponent(Component c) {
-    this.exemptComponents.add(c);
+  public void showComponent(@NotNull Component c) {
+    this.exemptComponents.add(new GenericHighlighter(c));
+    this.revalidatePane();
+  }
+
+  public void showEditor(@NotNull EditorComponentImpl editor, List<Integer> lineNumbers) {
+    var highlighter = new EditorHighlighter(editor);
+    for (int line : lineNumbers) {
+      highlighter.addLine(line);
+    }
+
+    this.exemptComponents.add(highlighter);
     this.revalidatePane();
   }
 

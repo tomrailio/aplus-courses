@@ -26,24 +26,26 @@ class CommonSteps(val remoteRobot: RemoteRobot) {
                     }
                 }
             }
-            step("Add OpenJDK 11") {
-                with(dialog("Project Structure", Duration.ofSeconds(20))) {
-                    sidePanel().findText("Project").click()
-                    customComboBox("\u001BProject SDK:").dropdown()
-                    with(heavyWeightWindow()) {
-                        attempt(2) {
-                            findText("Add SDK").click()
-                            heavyWeightWindow().findText("Download JDK...").click()
+            step("Add JDK") {
+                attempt(3) {
+                    with(dialog("Project Structure", Duration.ofSeconds(20))) {
+                        sidePanel().findText("Project").click()
+                        customComboBox("\u001BProject SDK:").dropdown()
+                        with(heavyWeightWindow()) {
+                            attempt(2) {
+                                findText("Add SDK").click()
+                                heavyWeightWindow().findText("Download JDK...").click()
+                            }
                         }
+                        with(dialog("Download JDK", Duration.ofSeconds(20))) {
+                            customComboBox("Version:").click()
+                            heavyWeightWindow().findText("11").click()
+                            customComboBox("Vendor:").click()
+                            heavyWeightWindow().findText("JetBrains Runtime").click()
+                            button("Download").click()
+                        }
+                        button("OK").click()
                     }
-                    with(dialog("Download JDK", Duration.ofSeconds(20))) {
-                        customComboBox("Version:").click()
-                        heavyWeightWindow().findText("11").click()
-                        customComboBox("Vendor:").click()
-                        heavyWeightWindow().findText("JetBrains Runtime").click()
-                        button("Download").click()
-                    }
-                    button("OK").click()
                 }
             }
         }
